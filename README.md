@@ -1,6 +1,6 @@
 # ubuntu-build-utils
 
-Create an Ubuntu noble based image for CI/CD pipelines.
+Create an Ubuntu resolute (26.04 LTS) based image for CI/CD pipelines.
 The following tools are included:
 - kubectl
 - helm3
