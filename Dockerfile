@@ -1,21 +1,22 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 LABEL MAINTAINER="CD-Minerva"
 
 ENV TERM=xterm
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Amsterdam
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
 # ENV SONAR_SCANNER_VERSION_ZIP=sonar-scanner-cli-4.0.0.1744-linux.zip
 # ENV SONAR_SCANNER_VERSION=sonar-scanner-4.0.0.1744-linux
 # ENV E2J2_SEARCHLIST=/etc,/usr/local/bin
 
 ENV K8S_URL=https://dl.k8s.io/release
-ENV KUBECTL_VERSION=1.26.1
-ENV HELM_VERSION=3.11.1
-ENV RANCHER_VERSION=2.7.0
-ENV E2J2_VERSION=0.7.0
-ENV PLUTO_VERSION=5.15.1
-ENV ARGO_VERSION=3.4.5
+ENV KUBECTL_VERSION=1.37.2
+ENV HELM_VERSION=3.22.1
+ENV RANCHER_VERSION=2.15.3
+ENV E2J2_VERSION=0.9.0
+ENV PLUTO_VERSION=5.24.5
+ENV ARGO_VERSION=4.1.6
 
 USER root
 
@@ -75,10 +76,10 @@ RUN sed -ri 's/^(declare (USERNAME|PASSWORD))$/\1=""/g' $HOME/.local/share/helm/
 RUN curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | tee /usr/share/keyrings/trivy.gpg > /dev/null \
  && echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | tee -a /etc/apt/sources.list.d/trivy.list \
  && apt-get update \
- && apt-get install trivy
+ && apt-get -y install trivy
 
 # Install E2J2
-RUN pip install --upgrade pip \
+RUN pip install --ignore-installed --upgrade pip \
  && pip install e2j2==${E2J2_VERSION}
 
 # Install ArgoWorkflows
@@ -96,4 +97,4 @@ RUN curl -sL https://github.com/FairwindsOps/pluto/releases/download/v${PLUTO_VE
     pluto version
 
 HEALTHCHECK --interval=15s --timeout=5s --retries=5 CMD echo up
-ENTRYPOINT /bin/bash
+ENTRYPOINT ["/bin/bash"]
