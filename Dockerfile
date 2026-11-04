@@ -17,44 +17,42 @@ ENV RANCHER_VERSION=2.15.3
 ENV E2J2_VERSION=0.9.0
 ENV PLUTO_VERSION=5.24.5
 ENV ARGO_VERSION=4.1.6
+ENV TRIVY_VERSION=0.76.1
 
 USER root
 
 # Update base system
 RUN cat /etc/os-release && \
     apt-get update && \
-    apt-get -y install apt-utils && \
+    apt-get -y install --no-install-recommends apt-utils && \
     apt-get update --fix-missing && \
     apt-get -y upgrade && \
-    apt-get -y install dialog locales iproute2 && \
+    apt-get -y install --no-install-recommends dialog locales iproute2 && \
     locale-gen en_US.UTF-8 && echo "LANG=en_US.UTF-8" > /etc/default/locale
 
 # Install utility packages
-RUN apt-get -y install ca-certificates \
-     build-essential \
+RUN apt-get -y install --no-install-recommends ca-certificates \
      git \
      jq \
      maven \
      curl \
      gnupg \
-     software-properties-common \
      lsb-release \
      python3 \
      python3-pip \
  && update-ca-certificates \
  && update-alternatives --install /usr/bin/python python /usr/bin/python3 1
 
-# Install docker and containerd suite
+# Install docker CLI suite
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
   $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
  && apt-get update \
- && apt-get install -y \
-      docker-ce \
+ && apt-get install -y --no-install-recommends \
       docker-ce-cli \
-      containerd.io \
       docker-buildx-plugin \
-      docker-compose-plugin
+      docker-compose-plugin \
+ && rm -rf /var/lib/apt/lists/*
 
 # Install kubectl
 RUN curl -s -LO ${K8S_URL}/v${KUBECTL_VERSION}/bin/linux/$(dpkg --print-architecture)/kubectl && \
@@ -73,14 +71,14 @@ RUN curl -sL https://get.helm.sh/helm-v${HELM_VERSION}-linux-$(dpkg --print-arch
 RUN sed -ri 's/^(declare (USERNAME|PASSWORD))$/\1=""/g' $HOME/.local/share/helm/plugins/helm-nexus-push.git/push.sh
 
 # Install trivy
-RUN curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | tee /usr/share/keyrings/trivy.gpg > /dev/null \
- && echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | tee -a /etc/apt/sources.list.d/trivy.list \
- && apt-get update \
- && apt-get -y install trivy
+RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "amd64" ]; then TRIVY_ARCH="64bit"; elif [ "$ARCH" = "arm64" ]; then TRIVY_ARCH="ARM64"; else TRIVY_ARCH="$ARCH"; fi && \
+    curl -sL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${TRIVY_ARCH}.tar.gz" | tar xzf - -C /usr/bin trivy && \
+    chmod +x /usr/bin/trivy && \
+    trivy --version
 
 # Install E2J2
-RUN pip install --ignore-installed --upgrade pip \
- && pip install e2j2==${E2J2_VERSION}
+RUN pip install --no-cache-dir e2j2==${E2J2_VERSION}
 
 # Install ArgoWorkflows
 RUN curl -sLO  https://github.com/argoproj/argo-workflows/releases/download/v${ARGO_VERSION}/argo-linux-$(dpkg --print-architecture).gz && \
