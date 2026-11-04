@@ -97,4 +97,4 @@ RUN curl -sL https://github.com/FairwindsOps/pluto/releases/download/v${PLUTO_VE
     pluto version
 
 HEALTHCHECK --interval=15s --timeout=5s --retries=5 CMD echo up
-ENTRYPOINT ["/bin/bash"]
+CMD ["/bin/bash"]
